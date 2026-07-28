@@ -1,9 +1,5 @@
-<p align="center">
-  <img src="assets/banner.png" alt="qr-link-decoder — turns redirect links that resolve to QR code images into the plain text hiding inside them, automatically, across a whole spreadsheet.">
-</p>
-
 # qr-link-decoder
-
+Turns redirect links that resolve to QR code images into the plain text hiding inside them, automatically, across a whole spreadsheet.
 Decode QR codes hidden behind redirect links, in bulk, straight from a spreadsheet.
 
 ## The problem
