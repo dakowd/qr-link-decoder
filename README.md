@@ -18,11 +18,11 @@ Some links don't lead to a page — they redirect straight to a QR code image. T
 
 Works with `.csv`, `.xls`, and `.xlsx` files.
 
-<img src="assets/solution.png" alt="The automated flow: first column, follow redirect, QR image, decode with OpenCV or pyzbar, write the result into the QR code column. Saves after every row, skips rows already filled in, retries on network errors, backs up the file before writing. Manual is 30 to 60 seconds per row; automated is one command for the whole sheet.">
-
 ## The solution
 
 One script walks the whole chain per row: follow the redirect, grab the image, decode it, write the decode text back - bo browser, no phone.
+
+<img src="assets/solution.png" alt="The automated flow: first column, follow redirect, QR image, decode with OpenCV or pyzbar, write the result into the QR code column. Saves after every row, skips rows already filled in, retries on network errors, backs up the file before writing. Manual is 30 to 60 seconds per row; automated is one command for the whole sheet.">
 
 ## Install
 
