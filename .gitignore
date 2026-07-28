@@ -1,0 +1,27 @@
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python bytecode / cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Environment / editor files
+.env
+.vscode/
+.idea/
+
+# Backups written by main.py
+*.bak
+
+# OS cruft
+.DS_Store
+Thumbs.db

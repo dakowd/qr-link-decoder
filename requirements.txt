@@ -1,0 +1,7 @@
+requests
+pandas
+openpyxl
+xlrd
+opencv-python-headless
+numpy
+pyzbar
