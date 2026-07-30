@@ -1,11 +1,14 @@
 """
-Reads redirect links from the first column of a spreadsheet (CSV, XLS, or
-XLSX). Each link redirects to a QR code image; this script follows the
-redirect, decodes the QR code, and writes the decoded text into a "QR code"
-column.
+Reads redirect links from a column of a spreadsheet (CSV, XLS, or XLSX).
+By default the first column is used, but this can be overridden. Each link
+redirects to a QR code image; this script follows the redirect, decodes the
+QR code, and writes the decoded text into a "QR code" column.
 
 Usage:
-    python main.py input.csv|.xls|.xlsx [output.csv|.xls|.xlsx]
+    python main.py input.csv|.xls|.xlsx [output.csv|.xls|.xlsx] [--column COLUMN]
+
+--column/-c accepts either a column name (e.g. "Link") or a 1-based column
+number (e.g. "2"). If omitted, the first column is used, same as before.
 
 If output is omitted, the input file is updated in place (a .bak backup is
 written first). Rows that already have a value in the QR code column are
@@ -17,8 +20,9 @@ retired). If no output path is given and the input is .xls, results are
 written to a sibling .xlsx file instead.
 """
 
-import sys
+import argparse
 import shutil
+import sys
 import time
 from pathlib import Path
 
@@ -106,18 +110,48 @@ def write_table(df, path):
         raise ValueError(f"Unsupported file type: {suffix} (use .csv, .xls, or .xlsx)")
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python main.py <input.csv|.xls|.xlsx> [output.csv|.xls|.xlsx]")
-        sys.exit(1)
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Decode QR codes from links found in a spreadsheet column."
+    )
+    parser.add_argument("input", type=Path, help="Input .csv, .xls, or .xlsx file")
+    parser.add_argument(
+        "output", type=Path, nargs="?", help="Output file (defaults to updating input in place)"
+    )
+    parser.add_argument(
+        "-c",
+        "--column",
+        help="Column to read links from: a column name or a 1-based column "
+        "number. Defaults to the first column.",
+    )
+    return parser.parse_args()
 
-    input_path = Path(sys.argv[1])
+
+def resolve_link_col(df, column):
+    if column is None:
+        return df.columns[0]
+
+    if column.isdigit():
+        index = int(column) - 1
+        if not 0 <= index < df.shape[1]:
+            raise ValueError(f"Column number {column} is out of range (1-{df.shape[1]})")
+        return df.columns[index]
+
+    if column not in df.columns:
+        raise ValueError(f"Column {column!r} not found. Available columns: {list(df.columns)}")
+    return column
+
+
+def main():
+    args = parse_args()
+
+    input_path = args.input
     if not input_path.exists():
         print(f"File not found: {input_path}")
         sys.exit(1)
 
-    if len(sys.argv) > 2:
-        output_path = Path(sys.argv[2])
+    if args.output:
+        output_path = args.output
     elif input_path.suffix.lower() == ".xls":
         output_path = input_path.with_suffix(".xlsx")
         print(f"Note: .xls can't be written back to; saving results to {output_path}")
@@ -134,7 +168,12 @@ def main():
         print("The file has no columns to read links from.")
         sys.exit(1)
 
-    link_col = df.columns[0]
+    try:
+        link_col = resolve_link_col(df, args.column)
+    except ValueError as exc:
+        print(exc)
+        sys.exit(1)
+
     if QR_COL_NAME not in df.columns:
         df[QR_COL_NAME] = ""
 

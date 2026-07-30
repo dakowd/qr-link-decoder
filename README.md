@@ -14,7 +14,7 @@ Decode QR codes hidden behind redirect links, in bulk, straight from a spreadshe
 
 ## What it does
 
-`main.py` reads a list of links from the first column of a file, and for every row:
+`main.py` reads a list of links from a column of a file (the first column, by default), and for every row:
 
 1. Follows the link's redirect straight to the image (no browser needed)
 2. Decodes the QR code in memory
@@ -43,11 +43,12 @@ python main.py links.xlsx
 ```
 
 ```
-python main.py <input> [output]
+python main.py <input> [output] [-c COLUMN]
 ```
 
-- `input` — a `.csv`, `.xls`, or `.xlsx` file with links in the first column.
+- `input` — a `.csv`, `.xls`, or `.xlsx` file with links in a column.
 - `output` (optional) — where to write results. If omitted, the input file is updated in place (a `.bak` backup is written first). You can also pass a path with a different extension to convert formats, e.g. `python main.py links.csv links.xlsx`.
+- `-c`/`--column` (optional) — which column holds the links, given as a column name or a 1-based column number. If omitted, the first column is used, e.g. `python main.py links.xlsx -c 3` or `python main.py links.xlsx -c "Redirect URL"`.
 
 ### Trying it out
 
