@@ -50,6 +50,12 @@ python main.py <input> [output] [-c COLUMN]
 - `output` (optional) — where to write results. If omitted, the input file is updated in place (a `.bak` backup is written first). You can also pass a path with a different extension to convert formats, e.g. `python main.py links.csv links.xlsx`.
 - `-c`/`--column` (optional) — which column holds the links, given as a column name or a 1-based column number. If omitted, the first column is used, e.g. `python main.py links.xlsx -c 3` or `python main.py links.xlsx -c "Redirect URL"`.
 
+```bash
+python main.py input.csv                          # same as before, uses column 1
+python main.py input.csv output.csv -c 3           # use column 3
+python main.py input.csv -c "Redirect URL"         # use column by name
+```
+
 ### Trying it out
 
 [example_links.xlsx](example_links.xlsx) shows the expected layout — a `Link` column followed by an empty `QR code` column — but its links are just placeholders. To test the script end-to-end with real redirect links:
