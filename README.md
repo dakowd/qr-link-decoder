@@ -28,6 +28,18 @@ Works with `.csv`, `.xls`, and `.xlsx` files.
   <img src="assets/solution-light.png" alt="The automated flow: first column, follow redirect, QR image, decode with OpenCV or pyzbar, write the result into the QR code column. Saves after every row, skips rows already filled in, retries on network errors, backs up the file before writing. Manual is 30 to 60 seconds per row; automated is one command for the whole sheet.">
 </picture>
 
+## For the ops team (no install needed)
+
+Download `QRLinkDecoder.exe` from the [GitHub Releases page](../../releases) (or from the latest [Actions build](../../actions/workflows/build-windows.yml) artifact) and double-click it. No Python, no command line.
+
+1. **Select File...** — pick your `.csv`, `.xls`, or `.xlsx` file.
+2. Pick the column that holds the QR links from the dropdown (it's pre-guessed for you).
+3. Choose to update the file in place (a backup is saved automatically) or save to a new file.
+4. **Start** — watch the log as it runs. **Cancel** stops it early without losing what's already done.
+5. When it finishes you'll get a summary of how many decoded vs. failed, and can jump straight to the output folder.
+
+It's safe to re-run on the same file — rows that already succeeded are skipped.
+
 ## Install
 
 ```bash
@@ -37,6 +49,16 @@ pip install -r requirements.txt
 ```
 
 ## Usage
+
+### GUI
+
+```bash
+python gui.py
+```
+
+Opens the same file-picker/log/summary flow described above, for local runs from source instead of the packaged `.exe`.
+
+### Command line
 
 ```bash
 python main.py links.xlsx
@@ -66,6 +88,41 @@ python main.py input.csv -c "Redirect URL"         # use column by name
 4. Run `python main.py your_copy.xlsx` — the `QR code` column should fill in with `QR-DEMO-0001` through `QR-DEMO-0004`, confirming the whole redirect → image → decode chain works before you point it at real data.
 
 The script prints progress as it goes and saves after every row, so a network hiccup partway through never loses what's already been decoded. Rows that already have a value in the `QR code` column are skipped, so it's always safe to re-run — it'll only pick up rows that are still missing or previously failed.
+
+## Building the .exe
+
+There are two ways to get `QRLinkDecoder.exe` — pick whichever fits the moment.
+
+### Option A: Build locally on Windows (fastest, for testing changes)
+
+On a Windows machine, with this repo checked out:
+
+```
+git pull
+build_windows.bat
+```
+
+The script creates a `venv` if there isn't one already, installs dependencies, runs PyInstaller, and launches the resulting `dist\QRLinkDecoder.exe` for you. Re-run it any time after pulling new changes.
+
+### Option B: Build with GitHub Actions (for distributing to the ops team)
+
+This doesn't require a Windows machine at all — GitHub builds it for you on a Windows runner.
+
+**Trigger a build manually (no release, just grab the file):**
+
+1. Push your changes: `git push`
+2. Go to the repo's **Actions** tab → **Build Windows executable** (left sidebar) → **Run workflow** button → **Run workflow**.
+3. Wait for the run to finish (~1-2 minutes) — click into it once it's green.
+4. Under **Artifacts** at the bottom of the run page, download **QRLinkDecoder-windows** (a zip containing the `.exe`).
+
+**Or, cut a proper release (gives the ops team a stable download link):**
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Pushing a tag matching `v*.*.*` triggers the same build automatically and attaches `QRLinkDecoder.exe` directly to a new entry on the repo's **Releases** page — that's the link to share with the ops team, and the one referenced above.
 
 ## Notes
 

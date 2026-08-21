@@ -110,6 +110,16 @@ def write_table(df, path):
         raise ValueError(f"Unsupported file type: {suffix} (use .csv, .xls, or .xlsx)")
 
 
+def resolve_output_path(input_path, output_path=None):
+    """Returns (output_path, note). note is a message to surface, or None."""
+    if output_path:
+        return output_path, None
+    if input_path.suffix.lower() == ".xls":
+        derived = input_path.with_suffix(".xlsx")
+        return derived, f"Note: .xls can't be written back to; saving results to {derived}"
+    return input_path, None
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Decode QR codes from links found in a spreadsheet column."
@@ -142,6 +152,55 @@ def resolve_link_col(df, column):
     return column
 
 
+def process_rows(df, link_col, output_path, on_progress=None, should_cancel=None):
+    """Decodes QR text for every unprocessed row in df, saving after each row.
+
+    on_progress(index, total, url, status, detail) is called after each row is
+    attempted, where status is "ok" or "failed" and detail is the decoded text
+    or the error message.
+
+    should_cancel(), if given, is checked before each row; when it returns
+    True, processing stops early (rows already written are kept).
+
+    Returns (processed_count, failed_count).
+    """
+    if QR_COL_NAME not in df.columns:
+        df[QR_COL_NAME] = ""
+
+    session = requests.Session()
+    total = len(df)
+    processed = 0
+    failed = 0
+
+    for i, row in df.iterrows():
+        if should_cancel is not None and should_cancel():
+            break
+
+        url = str(row[link_col]).strip()
+        if not url:
+            continue
+
+        if str(row[QR_COL_NAME]).strip():
+            continue  # already processed, skip (safe to re-run)
+
+        text, error = fetch_qr_text(url, session)
+
+        if text:
+            df.at[i, QR_COL_NAME] = text
+            processed += 1
+            if on_progress:
+                on_progress(i, total, url, "ok", text)
+        else:
+            df.at[i, QR_COL_NAME] = f"ERROR: {error}"
+            failed += 1
+            if on_progress:
+                on_progress(i, total, url, "failed", error)
+
+        write_table(df, output_path)  # save after each row so progress isn't lost
+
+    return processed, failed
+
+
 def main():
     args = parse_args()
 
@@ -150,13 +209,9 @@ def main():
         print(f"File not found: {input_path}")
         sys.exit(1)
 
-    if args.output:
-        output_path = args.output
-    elif input_path.suffix.lower() == ".xls":
-        output_path = input_path.with_suffix(".xlsx")
-        print(f"Note: .xls can't be written back to; saving results to {output_path}")
-    else:
-        output_path = input_path
+    output_path, note = resolve_output_path(input_path, args.output)
+    if note:
+        print(note)
 
     if output_path == input_path:
         backup_path = input_path.with_suffix(input_path.suffix + ".bak")
@@ -174,36 +229,11 @@ def main():
         print(exc)
         sys.exit(1)
 
-    if QR_COL_NAME not in df.columns:
-        df[QR_COL_NAME] = ""
-
-    session = requests.Session()
-
-    total = len(df)
-    processed = 0
-    failed = 0
-
-    for i, row in df.iterrows():
-        url = str(row[link_col]).strip()
-        if not url:
-            continue
-
-        if str(row[QR_COL_NAME]).strip():
-            continue  # already processed, skip (safe to re-run)
-
+    def on_progress(i, total, url, status, detail):
         print(f"[{i + 1}/{total}] {url} ...", end=" ", flush=True)
-        text, error = fetch_qr_text(url, session)
+        print("OK" if status == "ok" else f"FAILED ({detail})")
 
-        if text:
-            df.at[i, QR_COL_NAME] = text
-            print("OK")
-            processed += 1
-        else:
-            df.at[i, QR_COL_NAME] = f"ERROR: {error}"
-            print(f"FAILED ({error})")
-            failed += 1
-
-        write_table(df, output_path)  # save after each row so progress isn't lost
+    processed, failed = process_rows(df, link_col, output_path, on_progress=on_progress)
 
     print(f"\nDone. {processed} decoded, {failed} failed. Saved to {output_path}")
 
