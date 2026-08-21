@@ -5,3 +5,4 @@ xlrd
 opencv-python-headless
 numpy
 pyzbar
+opencv-python
